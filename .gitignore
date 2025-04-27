@@ -1,0 +1,7 @@
+*.pkl
+logs
+.vscode
+*.zip
+*.csv
+*.gif
+*.png
