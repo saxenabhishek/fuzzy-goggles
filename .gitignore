@@ -5,3 +5,5 @@ logs
 *.csv
 *.gif
 *.png
+__pycache__
+events*
