@@ -7,13 +7,14 @@ from io import StringIO
 class StockPortfolioEnv(gym.Env):
     metadata = {"render_modes": ["rgb_array"], "render_fps": 30}
 
-    def __init__(self, stock_data, window=5):
+    def __init__(self, stock_data, window=5, initial_cash=1000):
         super(StockPortfolioEnv, self).__init__()
 
         self.stock_data = stock_data
         self.stock_symbols = list(stock_data.keys())
         self.n_stocks = len(self.stock_symbols)
         self.window = window
+        self.cash = initial_cash
 
         self.n_features_per_stock = window + 1  # Closing prices + holding
 
@@ -60,6 +61,13 @@ class StockPortfolioEnv(gym.Env):
             self.trade_count["up"] + self.trade_count["down"] + 1e-6
         )
 
+    def _get_portfolio_value(self):
+        total_value = self.cash
+        for symbol in self.stock_symbols:
+            price = self.stock_data[symbol]["close"].iloc[self.current_step[symbol]]
+            total_value += self.holdings[symbol] * price
+        return total_value
+
     def _get_observation(self):
         obs = []
         for symbol_index, symbol in enumerate(self.stock_symbols):
@@ -102,6 +110,7 @@ class StockPortfolioEnv(gym.Env):
                 if self.holdings[symbol] == 0:
                     self.holdings[symbol] = 1
                     self.purchase_price[symbol] = current_price
+                    self.cash -= current_price
                     self.buy_signals[symbol].append(date)
                     reward += 2
                 else:
@@ -117,6 +126,8 @@ class StockPortfolioEnv(gym.Env):
                 if self.holdings[symbol] == 1:
                     profit = current_price - self.purchase_price[symbol]
                     self.total_profit += profit
+                    self.cash += current_price
+
                     if profit > 0:
                         reward += 5 * profit / self.purchase_price[symbol]
                         self.trade_count["up"] += 1
@@ -147,6 +158,7 @@ class StockPortfolioEnv(gym.Env):
         info["buy_signals"] = self.buy_signals
         info["sell_signals"] = self.sell_signals
         info["profit_rate"] = self.get_profit_rate()
+        info["cash"] = self._get_portfolio_value()
         return observation, reward, done, truncated, info
 
     def reset(self, seed=None, options=None):

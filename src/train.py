@@ -7,14 +7,17 @@ from stable_baselines3.common.callbacks import (
 )
 from stable_baselines3.common.env_util import make_vec_env
 
-from stock_portfolio_env import StockPortfolioEnv
-from const import (
+from src.stock_portfolio_env import StockPortfolioEnv
+from src.const import (
     DIR,
     WINDOW_LENGTH,
-    CONTINUE_TRAINING,
     TRAINING_ENVS,
     read_dict_from_pickle,
 )
+
+
+CONTINUE_TRAINING = True
+
 
 if __name__ == "__main__":
     train_df = read_dict_from_pickle("train_df", input_dir=DIR)
@@ -34,7 +37,7 @@ if __name__ == "__main__":
     )
 
     if CONTINUE_TRAINING:
-        norm_train_env = VecNormalize.load("vecnormalize.pkl", train_env)
+        norm_train_env = VecNormalize.load("./vecnormalize.pkl", train_env)
         model = A2C.load(
             "a2c_stock_trader", norm_train_env, tensorboard_log="./a2c_stock_trader/"
         )
@@ -71,6 +74,6 @@ if __name__ == "__main__":
         reset_num_timesteps=False,
     )
 
-    model.save("a2c_stock_trader")
-    norm_train_env.save("vecnormalize.pkl")
+    model.save("./a2c_stock_trader")
+    norm_train_env.save("./vecnormalize.pkl")
     print("model saved, training complete")

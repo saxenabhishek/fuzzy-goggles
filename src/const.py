@@ -2,10 +2,9 @@ import os
 import pickle
 from typing import Dict
 
-DIR = "./techLargCapStock"
 WINDOW_LENGTH = 100
-CONTINUE_TRAINING = True
-TRAINING_ENVS = 2
+DIR = "./techLargCapStock"
+TRAINING_ENVS = 4
 
 
 def read_dict_from_pickle(filename: str, input_dir: str = ".") -> Dict:

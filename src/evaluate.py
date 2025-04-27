@@ -1,10 +1,10 @@
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import A2C
-from stock_portfolio_env import StockPortfolioEnv
+from src.stock_portfolio_env import StockPortfolioEnv
 import matplotlib.pyplot as plt
 import numpy as np
-from const import read_dict_from_pickle, DIR, WINDOW_LENGTH
+from src.const import read_dict_from_pickle, DIR, WINDOW_LENGTH
 
 
 def plot_and_save_results(
@@ -49,7 +49,7 @@ def plot_and_save_results(
     )
 
     plt.title(
-        f"Trading Performance\nTotal Reward: {total_reward:.2f} | Final Profit: {profit[-1]:.2f} | Profit Rate: {info[0]['profit_rate']:.2%}",
+        f"Trading Performance\nTotal Reward: {total_reward:.2f} | Final Profit: {profit[-1]:.2f} | Profit Rate: {info[0]['profit_rate']:.2%} | Cash {info[0]['cash']:.2%}",
         fontsize=16,
     )
     plt.xlabel("Date", fontsize=14)
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     print(f"Total Reward: {total_reward: .4f}")
     print(f"Final Profit: {profit[-1]: .4f}")
     print(f"Profit Rate {info[0]['profit_rate']: .4f}")
+    print(f"Profit Rate {info[0]['cash']: .4f}")
 
     buy_signals = info[0]['buy_signals']
     sell_signals = info[0]['sell_signals']
