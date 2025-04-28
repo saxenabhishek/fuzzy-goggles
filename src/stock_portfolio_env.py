@@ -116,6 +116,8 @@ class StockPortfolioEnv(gym.Env):
             current_price = self.stock_data[symbol]["close"].iloc[current_step]
             date = self.stock_data[symbol]["date"].iloc[current_step]
 
+            portfolio_value = self._get_portfolio_value()
+
             if action == 2:  # Buy
                 # handle when agent tries to buy an asset with missing data
                 if current_price == 0:
@@ -137,10 +139,10 @@ class StockPortfolioEnv(gym.Env):
                     self.cash += current_price * self.holdings[symbol]
 
                     if profit > 0:
-                        reward += 5 * profit / self.purchase_price[symbol]
+                        reward += 2 * profit
                         self.trade_count["up"] += 1
                     else:
-                        reward -= 1 * abs(profit) / self.purchase_price[symbol]
+                        reward -= 1 * abs(profit)
                         self.trade_count["down"] += 1
 
                     self.holdings[symbol] = 0
@@ -148,7 +150,7 @@ class StockPortfolioEnv(gym.Env):
                     self.sell_signals[symbol].append(date)
                 else:
                     reward -= 0.5
-
+        reward += self._get_portfolio_value() - portfolio_value
         return reward
 
     def step(self, actions):

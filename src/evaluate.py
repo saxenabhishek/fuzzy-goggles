@@ -90,7 +90,6 @@ if __name__ == "__main__":
         profit.append(test_env.get_attr("total_profit")[0])
 
         new_obs, reward, done, info = test_env.step(action)
-        print(action, reward)
         rewards.append(reward[0])
         total_reward += reward[0]
 

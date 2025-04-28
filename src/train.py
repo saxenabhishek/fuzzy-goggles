@@ -15,10 +15,10 @@ from src.const import (
     read_dict_from_pickle,
 )
 
-CONTINUE_TRAINING = True
-TB_EXP_NAME = f"A2C_{WINDOW_LENGTH}_volume_ma100"
+CONTINUE_TRAINING = False
+TB_EXP_NAME = f"A2C_{WINDOW_LENGTH}_volume_ma100_portfolio_reward"
 TB_LOG_FILE = "D:/Projects/fuzzy-goggles/a2c_stock_trader"
-TIMESTEPS = 100_000
+TIMESTEPS = 50_000
 
 print(
     f"Training stating for {TB_EXP_NAME}, { 'continued' if CONTINUE_TRAINING else 'new'}"
