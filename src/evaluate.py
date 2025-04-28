@@ -8,11 +8,7 @@ from src.const import read_dict_from_pickle, DIR, WINDOW_LENGTH
 
 
 def plot_and_save_results(
-    test_df,
-    buy_signals,
-    sell_signals,
-    rewards,
-    profit
+    test_df, buy_signals, sell_signals, rewards, profit, percentage_increase
 ):
     plt.figure(figsize=(16, 10))  # Set figure size
 
@@ -35,21 +31,25 @@ def plot_and_save_results(
 
     plt.plot(
         test_df[key]["date"],
-        np.concatenate([np.zeros(100), profit]),
+        np.concatenate([np.zeros(WINDOW_LENGTH), profit]),
         label="Profit",
         linewidth=2,
         color="blue",
     )
     plt.plot(
         test_df[key]["date"],
-        np.concatenate([np.zeros(100), np.multiply(rewards, 10)]),
+        np.concatenate([np.zeros(WINDOW_LENGTH), np.multiply(rewards, 10)]),
         label="Rewards (scaled)",
         linewidth=2,
         color="orange",
     )
 
     plt.title(
-        f"Trading Performance\nTotal Reward: {total_reward:.2f} | Final Profit: {profit[-1]:.2f} | Profit Rate: {info[0]['profit_rate']:.2%} | Cash {info[0]['cash']:.2%}",
+        f"Trading Performance\nTotal Reward: {total_reward:.2f} |"
+        + f"Final Profit: {profit[-1]:.2f}$ |"
+        + f"Profit Rate: {info[0]['profit_rate']:.2%} |"
+        + f"Percentage Increase: {percentage_increase:.2%} |"
+        + f"Portfolio Value {info[0]['cash']}",
         fontsize=16,
     )
     plt.xlabel("Date", fontsize=14)
@@ -78,6 +78,7 @@ if __name__ == "__main__":
 
     # Load best model
     eval_model = A2C.load("logs/best_model", test_env)
+    # eval_model = A2C.load("a2c_stock_trader.zip", test_env)
 
     obs = test_env.reset()
     done = False
@@ -89,6 +90,7 @@ if __name__ == "__main__":
         profit.append(test_env.get_attr("total_profit")[0])
 
         new_obs, reward, done, info = test_env.step(action)
+        print(action, reward)
         rewards.append(reward[0])
         total_reward += reward[0]
 
@@ -98,9 +100,18 @@ if __name__ == "__main__":
     print(f"Total Reward: {total_reward: .4f}")
     print(f"Final Profit: {profit[-1]: .4f}")
     print(f"Profit Rate {info[0]['profit_rate']: .4f}")
-    print(f"Profit Rate {info[0]['cash']: .4f}")
+    print(f"Portfolio Value{info[0]['cash']: .4f}")
 
-    buy_signals = info[0]['buy_signals']
-    sell_signals = info[0]['sell_signals']
+    initial_portfolio_value = 1000
+    final_portfolio_value = info[0]["cash"]
+    percentage_increase = (
+        final_portfolio_value - initial_portfolio_value
+    ) / initial_portfolio_value
+    print(f"Percentage Increase in Portfolio Value: {percentage_increase:.2%}")
 
-    plot_and_save_results(test_df,  buy_signals, sell_signals, rewards, profit)
+    buy_signals = info[0]["buy_signals"]
+    sell_signals = info[0]["sell_signals"]
+
+    plot_and_save_results(
+        test_df, buy_signals, sell_signals, rewards, profit, percentage_increase
+    )

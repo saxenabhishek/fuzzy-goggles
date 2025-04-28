@@ -15,20 +15,18 @@ from src.const import (
     read_dict_from_pickle,
 )
 
-
 CONTINUE_TRAINING = True
+TB_EXP_NAME = f"A2C_{WINDOW_LENGTH}_volume_ma100"
+TB_LOG_FILE = "D:/Projects/fuzzy-goggles/a2c_stock_trader"
+TIMESTEPS = 100_000
 
+print(
+    f"Training stating for {TB_EXP_NAME}, { 'continued' if CONTINUE_TRAINING else 'new'}"
+)
 
 if __name__ == "__main__":
     train_df = read_dict_from_pickle("train_df", input_dir=DIR)
     test_df = read_dict_from_pickle("test_df", input_dir="./techLargCapStock")
-
-    test_env = DummyVecEnv(
-        [lambda: Monitor(StockPortfolioEnv(test_df, window=WINDOW_LENGTH))]
-    )
-    test_env = VecNormalize.load("vecnormalize.pkl", test_env)
-    test_env.training = False  # Important!
-    test_env.norm_reward = False  # Only normalize during training
 
     train_env = make_vec_env(
         lambda: Monitor(StockPortfolioEnv(train_df, window=WINDOW_LENGTH)),
@@ -36,13 +34,21 @@ if __name__ == "__main__":
         seed=42,
     )
 
+    test_env = DummyVecEnv(
+        [lambda: Monitor(StockPortfolioEnv(test_df, window=WINDOW_LENGTH))]
+    )
     if CONTINUE_TRAINING:
-        norm_train_env = VecNormalize.load("./vecnormalize.pkl", train_env)
+        norm_train_env = VecNormalize.load("./vecnormalize.pkl")
         model = A2C.load(
-            "a2c_stock_trader", norm_train_env, tensorboard_log="./a2c_stock_trader/"
+            "a2c_stock_trader.zip", norm_train_env, tensorboard_log=TB_LOG_FILE
         )
+        test_env = VecNormalize.load("vecnormalize.pkl")
+
         print("Model Loaded, continuing training")
     else:
+        test_env = VecNormalize(
+            test_env, norm_obs=True, norm_reward=True, clip_obs=10.0
+        )
         norm_train_env = VecNormalize(
             train_env, norm_obs=True, norm_reward=True, clip_obs=10.0
         )
@@ -53,6 +59,8 @@ if __name__ == "__main__":
             tensorboard_log="./a2c_stock_trader/",
         )
 
+    test_env.training = False  # Important!
+    test_env.norm_reward = False  # Only normalize during training
     callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=200, verbose=1)
 
     eval_callback = EvalCallback(
@@ -65,12 +73,13 @@ if __name__ == "__main__":
         deterministic=True,
         render=False,
     )
+    input("Press any key to confirm")
 
     hist = model.learn(
-        total_timesteps=50_000,
+        total_timesteps=TIMESTEPS,
         progress_bar=True,
         callback=eval_callback,
-        tb_log_name="second_run",
+        tb_log_name=TB_EXP_NAME,
         reset_num_timesteps=False,
     )
 
