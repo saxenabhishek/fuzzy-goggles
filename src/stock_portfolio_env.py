@@ -16,7 +16,7 @@ class StockPortfolioEnv(gym.Env):
         self.window = window
         self.cash = initial_cash
 
-        self.n_features_per_stock = window + 1  # Closing prices + holding
+        self.n_features_per_stock = 3 * window + 1  # Closing prices + holding
 
         self.current_step = {symbol: window - 1 for symbol in self.stock_symbols}
         self.holdings = {
@@ -80,6 +80,18 @@ class StockPortfolioEnv(gym.Env):
                 .values.astype(np.float32)
             )
 
+            volume = (
+                data["volume"]
+                .iloc[start_index : current_step + 1]
+                .values.astype(np.float32)
+            )
+
+            ma = (
+                data["close_ma_100"]
+                .iloc[start_index : current_step + 1]
+                .values.astype(np.float32)
+            )
+
             # Pad with the earliest price if not enough history
             if len(closing_prices) < self.window:
                 padding = np.full(
@@ -88,9 +100,11 @@ class StockPortfolioEnv(gym.Env):
                     dtype=np.float32,
                 )
                 closing_prices = np.concatenate([padding, closing_prices])
+                volume = np.concatenate([padding, volume])
+                ma = np.concatenate([padding, ma])
 
             holding_status = np.array([self.holdings[symbol]], dtype=np.float32) * 100
-            stock_obs = np.concatenate([closing_prices, holding_status])
+            stock_obs = np.concatenate([closing_prices, volume, ma, holding_status])
             obs.append(stock_obs)
         return np.concatenate(obs)
 
@@ -107,26 +121,20 @@ class StockPortfolioEnv(gym.Env):
                 if current_price == 0:
                     reward -= 0.5
                     continue
-                if self.holdings[symbol] == 0:
-                    self.holdings[symbol] = 1
-                    self.purchase_price[symbol] = current_price
+                if current_price <= self.cash:
+                    self.holdings[symbol] += 1
+                    self.purchase_price[symbol] += current_price
                     self.cash -= current_price
                     self.buy_signals[symbol].append(date)
                     reward += 2
-                else:
-                    reward -= 0.5
-            elif action == 1:  # Hold
-                if self.holdings[symbol] == 1 and self.purchase_price[symbol] > 0:
-                    reward += (
-                        3
-                        * (current_price - self.purchase_price[symbol])
-                        / self.purchase_price[symbol]
-                    )
             elif action == 0:  # Sell
-                if self.holdings[symbol] == 1:
-                    profit = current_price - self.purchase_price[symbol]
+                if self.holdings[symbol] > 0:
+                    profit = (
+                        current_price * self.holdings[symbol]
+                        - self.purchase_price[symbol]
+                    )
                     self.total_profit += profit
-                    self.cash += current_price
+                    self.cash += current_price * self.holdings[symbol]
 
                     if profit > 0:
                         reward += 5 * profit / self.purchase_price[symbol]
